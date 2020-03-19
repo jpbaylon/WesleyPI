@@ -220,6 +220,7 @@ function removeA(arr) {
 
 client.on('ready', () => {
 	console.log('Logged in as ${client.user.tag}!');
+	client.user.setActivity("&challenge", {type: 'PLAYING'});
 });
 
 client.on('message', msg => {
@@ -276,7 +277,7 @@ client.on('message', msg => {
 			console.log(gameFileName);
 			var post = currentGame.toString;
 
-			post = post.concat("\n<@" + currentGame.getCrossID + ">, it is your turn!\nMove with commands such as 'a1', 'c3', etc");
+			post = post.concat("\n<@" + currentGame.getCrossID + ">, it is your turn!\nMove with commands such as 'a1', 'c3', etc\nEnter &abort to end the game.");
 
 			msg.channel.send(post);
 
@@ -390,7 +391,7 @@ client.on('message', msg => {
 			}
 			else { 
 				challenges.push(new Challenge(msg.author.id, msg.mentions.members.first().id)); // add a new challenge to the array
-				msg.channel.send("" + splitMessage[1] + ", <@" + msg.author.id + "> has challenged you!\nDo you accept the challenge? Reply with 'yes' or 'no'"); // notify the user that they have been challenged
+				msg.channel.send("" + splitMessage[1] + ", <@" + msg.author.id + "> has challenged you!\nDo you accept the challenge? Reply with 'yes' or 'no'\n(Enter &cancel to cancel the challenge)"); // notify the user that they have been challenged
 				console.log('Challenges size: ' + challenges.length);
 			}
 		}
