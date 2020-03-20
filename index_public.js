@@ -113,7 +113,7 @@ class GameInterpreter {
 
 	// make move to the board
 	move(id, row, col) {
-		if ((this.crossID != this.circleID) && (((this.crossID == id) && (this.currentTurn == 1)) || ((this.cirlceID == id) && (this.currentTurn == 0))))
+		if ((this.crossID != this.circleID) && (((this.crossID == id) && (this.currentTurn == 1)) || ((this.circleID == id) && (this.currentTurn == 0))))
 			throw "wait";
 
 		if (this.gameBoard[row][col] != 2)
@@ -146,11 +146,23 @@ class GameInterpreter {
 		if (this.usedSpaces == 9)
 			throw "draw";
 
-		// change the turn
-		if (this.currentTurn == 0)
+		// change the turn and move AI if neccessary
+		if (this.currentTurn == 0) {
 			this.currentTurn = 1;
-		else
+			if (this.circleID == -1) {
+				var nextMove = parseInt(this.easyTTT()); // get a move to play
+				console.log(nextMove);
+				this.move(-1, Math.floor(nextMove / 3), nextMove % 3); // recurssive call to make the move
+			}
+		}
+		else {
 			this.currentTurn = 0;
+			if (this.crossID == -1) {
+				var nextMove = parseInt(this.easyTTT()); // get a move to play
+				console.log(nextMove);
+				this.move(-1, Math.floor(nextMove / 3), nextMove % 3); // recurssive call to make the move
+			}
+		}
 	}
 
 	// write to file
@@ -203,6 +215,22 @@ class GameInterpreter {
 				return ' ';
 		}
 	}
+
+	// easy Tic-Tac-Toe AI
+	// find the open spaces and fill a space
+	easyTTT() {
+		var openSpaces = []; // 1d array to keep track of the open spaces
+		var counter = 0; // keep track of spaces
+		for (var i = 0; i < 3; i++) {
+			for (var j = 0; j < 3; j++) {
+				if (this.gameBoard[i][j] == '2' || this.gameBoard[i][j] == 2)
+					openSpaces.push(counter);
+				counter++;
+			}
+		}
+
+		return openSpaces[Math.floor(Math.random() * openSpaces.length)]; // return a random space to play in
+	}
 }
 
 // function to remove an element from an array
@@ -218,28 +246,16 @@ function removeA(arr) {
 	return arr;
 }
 
+
 client.on('ready', () => {
 	console.log('Logged in as ${client.user.tag}!');
-	client.user.setActivity("&challenge", {type: 'PLAYING'});
+	client.user.setActivity("job, your job", {type: 'PLAYING'});
 });
 
 client.on('message', msg => {
 	// basic ping
 	if (msg.content === 'ping') {
 		msg.channel.send('@everyone');
-	}
-
-	// read abc.txt
-	if (msg.content === 'readfile') {
-		txt = fs.readFileSync('./abc.txt', {"encoding": "utf-8"});
-		msg.channel.send(txt);
-	}
-
-	// write to abc.txt
-	if (msg.content == 'writefile') {
-		fs.appendFile('./abc.txt', '\ngood morning', (err) => {
-			if (err) throw err;
-		});
 	}
 
 	if (msg.content == 'yes') { // accepted challenge
@@ -328,7 +344,12 @@ client.on('message', msg => {
 						break;
 					case "0 victory":
 						var post = currentGame.toString;
-						post = post.concat("\n<@" + currentGame.getCircleID + ">, " + "<@" + currentGame.getCrossID + "> has won the game!");
+						if (currentGame.getCircleID == -1)
+							post = post.concat("\n<@" + currentGame.getCrossID + ">, I've lost the game. Good game.");
+						else if (currentGame.getCrossID == -1)
+							post = post.concat("\nYes! <@" + currentGame.getCircleID + ">, I've won. Good game.");
+						else
+							post = post.concat("\n<@" + currentGame.getCircleID + ">, " + "<@" + currentGame.getCrossID + "> has won the game!");
 						msg.channel.send(post);
 						fs.unlinkSync(gameManager.gameFile(msg.author.id));
 						gameManager.remove(currentGame.getCrossID);
@@ -337,7 +358,12 @@ client.on('message', msg => {
 						break;
 					case "1 victory":
 						var post = currentGame.toString;
-						post = post.concat("\n<@" + currentGame.getCrossID + ">, " + "<@ " + currentGame.getCircleID + "> has won the game!");
+						if (currentGame.getCrossID == -1)
+							post = post.concat("\n<@" + currentGame.getCircleID + ">, I've lost the game. Good game.");
+						else if (currentGame.getCircleID == -1)
+							post = post.concat("\nYes! <@" + currentGame.getCrossID + ">, I've won. Good game.");
+						else
+							post = post.concat("\n<@" + currentGame.getCrossID + ">, " + "<@" + currentGame.getCircleID + "> has won the game!");
 						msg.channel.send(post);
 						fs.unlinkSync(gameManager.gameFile(msg.author.id));
 						gameManager.remove(currentGame.getCrossID);
@@ -346,7 +372,10 @@ client.on('message', msg => {
 						break;
 					case "draw":
 						var post = currentGame.toString;
-						post = post.concat("\n<@" + currentGame.getCrossID + "> and " + "<@ " + currentGame.getCircleID + ">, this game ends in a draw!");
+						if (currentGame.getCrossID == -1 || currentGame.getCircleID == -1)
+							post = post.concat("\n<@" + msg.author.id + ">, looks like we drew. Good game.");
+						else
+							post = post.concat("\n<@" + currentGame.getCrossID + "> and " + "<@" + currentGame.getCircleID + ">, this game ends in a draw!");
 						msg.channel.send(post);
 						fs.unlinkSync(gameManager.gameFile(msg.author.id));
 						gameManager.remove(currentGame.getCrossID);
@@ -390,9 +419,51 @@ client.on('message', msg => {
 				msg.channel.send(msg.mentions.members.first().user.username + " is already in a game.");
 			}
 			else { 
-				challenges.push(new Challenge(msg.author.id, msg.mentions.members.first().id)); // add a new challenge to the array
 				msg.channel.send("" + splitMessage[1] + ", <@" + msg.author.id + "> has challenged you!\nDo you accept the challenge? Reply with 'yes' or 'no'\n(Enter &cancel to cancel the challenge)"); // notify the user that they have been challenged
-				console.log('Challenges size: ' + challenges.length);
+				if (msg.mentions.members.first().id == client.user.id) { // challenging the bot
+					msg.channel.send("Oh, you're challenging me? Game on then."); // accepted challenge
+
+					
+					var firstTurn = Math.floor(Math.random() * 2); // determine who has to go first
+					
+					var gameFileName;
+					var currentGame;
+					
+					 if (firstTurn == 0) { // challenger goes first
+						gameFileName = "" + msg.author.id + ".txt";
+						fs.writeFileSync(gameFileName, msg.author.id + "\n-1\n0\n222222222", (err) => { // write to the new data file
+							if (err) throw err;
+						});
+						currentGame = new GameInterpreter([msg.author.id, -1, "0", "222222222"]);
+					 }
+					
+					else { // challenger goes second
+						gameFileName = "" + msg.author.id + ".txt";
+						currentGame = new GameInterpreter([-1, msg.author.id, "0", "222222222"]);
+
+						var nextMove = parseInt(currentGame.easyTTT()); // get a move to play
+						console.log(nextMove);
+						currentGame.move(-1, Math.floor(nextMove / 3), nextMove % 3); // recurssive call to make the move
+						currentGame.writeToFile(gameFileName);
+					}
+					
+
+					// point user ID to the gamefile
+					gameManager.add(msg.author.id, gameFileName);
+					console.log('Game Manager size: ' + gameManager.length);
+
+					// generate post for initiated game
+					var post = currentGame.toString;
+
+					post = post.concat("\n<@" + msg.author.id + ">, it is your turn!\nMove with commands such as 'a1', 'c3', etc\nEnter &abort to end the game.");
+
+					msg.channel.send(post);
+
+				}
+				else { // challenging a user
+					challenges.push(new Challenge(msg.author.id, msg.mentions.members.first().id)); // add a new challenge to the array
+					console.log('Challenges size: ' + challenges.length);
+				}
 			}
 		}
 		if (splitMessage[0] == 'cancel') { // cancel a challenge
