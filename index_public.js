@@ -6,6 +6,7 @@ var txt = 'lmao';
 var runningID = 0;
 var challenges = [];
 var validMoves = ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "c3"];
+var validDifficulties = ["easy", "medium"];
 
 class Challenge {
 	constructor(challengerID, challengedID) {
@@ -119,7 +120,7 @@ class GameInterpreter {
 		if (this.gameBoard[row][col] != 2)
 			throw "used";
 		// make move
-		this.gameBoard[row][col] = this.currentTurn;
+		this.gameBoard[row][col] = "" + this.currentTurn;
 		this.usedSpaces++;
 
 		// check for win
@@ -154,11 +155,21 @@ class GameInterpreter {
 				console.log(nextMove);
 				this.move(-1, Math.floor(nextMove / 3), nextMove % 3); // recurssive call to make the move
 			}
+			if (this.circleID == -2) {
+				var nextMove = parseInt(this.mediumTTT()); // get a move to play
+				console.log(nextMove);
+				this.move(-1, Math.floor(nextMove / 3), nextMove % 3); // recurssive call to make the move
+			}
 		}
 		else {
 			this.currentTurn = 0;
 			if (this.crossID == -1) {
 				var nextMove = parseInt(this.easyTTT()); // get a move to play
+				console.log(nextMove);
+				this.move(-1, Math.floor(nextMove / 3), nextMove % 3); // recurssive call to make the move
+			}
+			if (this.crossID == -2) {
+				var nextMove = parseInt(this.mediumTTT()); // get a move to play
 				console.log(nextMove);
 				this.move(-1, Math.floor(nextMove / 3), nextMove % 3); // recurssive call to make the move
 			}
@@ -178,7 +189,6 @@ class GameInterpreter {
 
 	// convert the board to a displayable board post
 	get toString() {
-		console.log(this.gameBoard);
 		var result = "```  1   2   3\n    |   |\nA ";
 		for (var i = 0; i < 2; i++) {
 			result = result.concat(this.numberToLetter(this.gameBoard[0][i]) + " | ");
@@ -230,6 +240,114 @@ class GameInterpreter {
 		}
 
 		return openSpaces[Math.floor(Math.random() * openSpaces.length)]; // return a random space to play in
+	}
+
+	// medium Tic-Tac-Toe AI
+	// finds victory where possible
+	// finds opponent victory and blocks it
+	// then finds an open space to fill
+	mediumTTT() {
+		var openSpaces = []; // 1d array to keep track of the open spaces
+		var counter = 0; // keep track of spaces
+
+		for (var i = 0; i < 3; i++) {
+			for (var j = 0; j < 3; j++) {
+				if (this.gameBoard[i][j] == '2' || this.gameBoard[i][j] == 2)
+					openSpaces.push(counter);
+				counter++;
+			}
+		}
+
+		if (this.currentTurn == '0') {
+			// look for victory
+			for (var i = 0; i < openSpaces.length; i++) {
+				var testBoard = new Array(3);
+				for (var j = 0; j < 3; j++)
+					testBoard[j] = new Array(3);
+				for (var j = 0; j < 3; j++) {
+					for (var k = 0; k < 3; k++) {
+						if (openSpaces[i] == j * 3 + k)
+							testBoard[j][k] = '0';
+						else
+							testBoard[j][k] = this.gameBoard[j][k];
+					}
+				}
+				if (this.winScenario(testBoard) == true)
+					return openSpaces[i];
+			}
+
+			// look for opponent victory to block
+			for (var i = 0; i < openSpaces.length; i++) {
+				var testBoard = new Array(3);
+				for (var j = 0; j < 3; j++)
+					testBoard[j] = new Array(3);
+				for (var j = 0; j < 3; j++) {
+					for (var k = 0; k < 3; k++) {
+						if (openSpaces[i] == j * 3 + k)
+							testBoard[j][k] = '1';
+						else
+							testBoard[j][k] = this.gameBoard[j][k];
+					}
+				}
+				if (this.winScenario(testBoard) == true)
+					return openSpaces[i];
+			}
+			return openSpaces[Math.floor(Math.random() * openSpaces.length)]; // return a random space to play in
+		}
+		else {
+			// look for victory
+			for (var i = 0; i < openSpaces.length; i++) {
+				var testBoard = new Array(3);
+				for (var j = 0; j < 3; j++)
+					testBoard[j] = new Array(3);
+				for (var j = 0; j < 3; j++) {
+					for (var k = 0; k < 3; k++) {
+						if (openSpaces[i] == j * 3 + k)
+							testBoard[j][k] = '1';
+						else
+							testBoard[j][k] = this.gameBoard[j][k];
+					}
+				}
+				if (this.winScenario(testBoard) == true)
+					return openSpaces[i];
+			}
+
+			// look for opponent victory to block
+			for (var i = 0; i < openSpaces.length; i++) {
+				var testBoard = new Array(3);
+				for (var j = 0; j < 3; j++)
+					testBoard[j] = new Array(3);
+				for (var j = 0; j < 3; j++) {
+					for (var k = 0; k < 3; k++) {
+						if (openSpaces[i] == j * 3 + k)
+							testBoard[j][k] = '0';
+						else
+							testBoard[j][k] = this.gameBoard[j][k];
+					}
+				}
+				if (this.winScenario(testBoard) == true)
+					return openSpaces[i];
+			}
+			return openSpaces[Math.floor(Math.random() * openSpaces.length)]; // return a random space to play in
+		}
+	}
+
+	// method that checks for a win in a game board
+	// to be used only with the class
+	winScenario = function(gameBoard) {
+		if (gameBoard[0][0] == gameBoard[1][1] && gameBoard[1][1] == gameBoard[2][2] && gameBoard[0][0] != '2')
+			return true;
+		if (gameBoard[0][2] == gameBoard[1][1] && gameBoard[1][1] == gameBoard[2][0] && gameBoard[1][1] != '2')
+			return true;
+		for (var i = 0; i <= 2; i++) {
+			if (gameBoard[i][0] == gameBoard[i][1] && gameBoard[i][1] == gameBoard[i][2] && gameBoard[i][0] != '2')
+				return true;
+		}
+		for (var i = 0; i <= 2; i++) {
+			if (gameBoard[0][i] == gameBoard[1][i] && gameBoard[1][i] == gameBoard[2][i] && gameBoard[0][i] != '2')
+				return true;
+		}
+		return false;
 	}
 }
 
@@ -314,6 +432,69 @@ client.on('message', msg => {
 		}
 	}
 
+	if (validDifficulties.includes(msg.content)) { // playing nelson and selecting a difficulty
+		var foundChallenge = challenges.find(function(challenge) { // find the challenge
+			return (challenge.getChallenged == msg.author.id && challenge.getChallenger == -1);
+		});
+
+		if (foundChallenge != undefined) {
+			var difficulty;
+			if (msg.content == "easy") {
+				msg.channel.send("<@" + msg.author.id + ">, I'll be dumb as bricks. Initiating game...");
+				difficulty = -1;
+			}
+			else {
+				msg.channel.send("<@" + msg.author.id + ">, you better keep your brain on because I'll pose a small challenge. Initiating game...");
+				difficulty = -2;
+			}
+
+			var firstTurn = Math.floor(Math.random() * 2); // determine who has to go first
+			
+			var gameFileName;
+			var currentGame;
+			
+			 if (firstTurn == 0) { // challenger goes first
+				gameFileName = "" + msg.author.id + ".txt";
+				fs.writeFileSync(gameFileName, msg.author.id + "\n" + difficulty + "\n0\n222222222", (err) => { // write to the new data file
+					if (err) throw err;
+				});
+				currentGame = new GameInterpreter([msg.author.id, difficulty, "0", "222222222"]);
+			 }
+			
+			else { // challenger goes second
+				gameFileName = "" + msg.author.id + ".txt";
+				currentGame = new GameInterpreter([difficulty, msg.author.id, "0", "222222222"]);
+
+				var nextMove;
+				switch (difficulty) {
+					case -1:
+						var nextMove = parseInt(currentGame.easyTTT()); // get a move to play
+						break;
+					case -2:
+						var nextMove = parseInt(currentGame.mediumTTT()); // get a move to play
+						break;
+				}
+				console.log(nextMove);
+				currentGame.move(difficulty, Math.floor(nextMove / 3), nextMove % 3); // recurssive call to make the move
+				currentGame.writeToFile(gameFileName);
+			}
+			
+
+			// point user ID to the gamefile
+			gameManager.add(msg.author.id, gameFileName);
+			console.log('Game Manager size: ' + gameManager.length);
+
+			// generate post for initiated game
+			var post = currentGame.toString;
+
+			post = post.concat("\n<@" + msg.author.id + ">, it is your turn!\nMove with commands such as 'a1', 'c3', etc\nEnter &abort to end the game.");
+
+			msg.channel.send(post);
+
+			removeA(challenges, foundChallenge); // remove challenge
+			console.log('Challenges size: ' + challenges.length);
+		}
+	}
 	if (validMoves.includes(msg.content)) { // tic-tac-toe move
 		if (gameManager.contains(msg.author.id)) { // they are playing a game currently
 			var contents = fs.readFileSync(gameManager.gameFile(msg.author.id), "utf8"); 
@@ -344,9 +525,9 @@ client.on('message', msg => {
 						break;
 					case "0 victory":
 						var post = currentGame.toString;
-						if (currentGame.getCircleID == -1)
+						if (currentGame.getCircleID < 0)
 							post = post.concat("\n<@" + currentGame.getCrossID + ">, I've lost the game. Good game.");
-						else if (currentGame.getCrossID == -1)
+						else if (currentGame.getCrossID < 0)
 							post = post.concat("\nYes! <@" + currentGame.getCircleID + ">, I've won. Good game.");
 						else
 							post = post.concat("\n<@" + currentGame.getCircleID + ">, " + "<@" + currentGame.getCrossID + "> has won the game!");
@@ -358,9 +539,9 @@ client.on('message', msg => {
 						break;
 					case "1 victory":
 						var post = currentGame.toString;
-						if (currentGame.getCrossID == -1)
+						if (currentGame.getCrossID < 0)
 							post = post.concat("\n<@" + currentGame.getCircleID + ">, I've lost the game. Good game.");
-						else if (currentGame.getCircleID == -1)
+						else if (currentGame.getCircleID < 0)
 							post = post.concat("\nYes! <@" + currentGame.getCrossID + ">, I've won. Good game.");
 						else
 							post = post.concat("\n<@" + currentGame.getCrossID + ">, " + "<@" + currentGame.getCircleID + "> has won the game!");
@@ -372,7 +553,7 @@ client.on('message', msg => {
 						break;
 					case "draw":
 						var post = currentGame.toString;
-						if (currentGame.getCrossID == -1 || currentGame.getCircleID == -1)
+						if (currentGame.getCrossID < 0 || currentGame.getCircleID < 0)
 							post = post.concat("\n<@" + msg.author.id + ">, looks like we drew. Good game.");
 						else
 							post = post.concat("\n<@" + currentGame.getCrossID + "> and " + "<@" + currentGame.getCircleID + ">, this game ends in a draw!");
@@ -421,43 +602,9 @@ client.on('message', msg => {
 			else { 
 				msg.channel.send("" + splitMessage[1] + ", <@" + msg.author.id + "> has challenged you!\nDo you accept the challenge? Reply with 'yes' or 'no'\n(Enter &cancel to cancel the challenge)"); // notify the user that they have been challenged
 				if (msg.mentions.members.first().id == client.user.id) { // challenging the bot
-					msg.channel.send("Oh, you're challenging me? Game on then."); // accepted challenge
-
-					
-					var firstTurn = Math.floor(Math.random() * 2); // determine who has to go first
-					
-					var gameFileName;
-					var currentGame;
-					
-					 if (firstTurn == 0) { // challenger goes first
-						gameFileName = "" + msg.author.id + ".txt";
-						fs.writeFileSync(gameFileName, msg.author.id + "\n-1\n0\n222222222", (err) => { // write to the new data file
-							if (err) throw err;
-						});
-						currentGame = new GameInterpreter([msg.author.id, -1, "0", "222222222"]);
-					 }
-					
-					else { // challenger goes second
-						gameFileName = "" + msg.author.id + ".txt";
-						currentGame = new GameInterpreter([-1, msg.author.id, "0", "222222222"]);
-
-						var nextMove = parseInt(currentGame.easyTTT()); // get a move to play
-						console.log(nextMove);
-						currentGame.move(-1, Math.floor(nextMove / 3), nextMove % 3); // recurssive call to make the move
-						currentGame.writeToFile(gameFileName);
-					}
-					
-
-					// point user ID to the gamefile
-					gameManager.add(msg.author.id, gameFileName);
-					console.log('Game Manager size: ' + gameManager.length);
-
-					// generate post for initiated game
-					var post = currentGame.toString;
-
-					post = post.concat("\n<@" + msg.author.id + ">, it is your turn!\nMove with commands such as 'a1', 'c3', etc\nEnter &abort to end the game.");
-
-					msg.channel.send(post);
+					msg.channel.send("Oh, you're challenging me? Game on then.\nEnter a difficulty ('easy', 'medium')"); // accepted challenge
+					challenges.push(new Challenge(-1, msg.author.id));
+					console.log('Challenges size: ' + challenges.length);
 
 				}
 				else { // challenging a user
@@ -475,6 +622,16 @@ client.on('message', msg => {
 				msg.channel.send("Challenge cancelled.");
 				removeA(challenges, cancel);
 				console.log('Challenges sizes: ' + challenges.length);
+			}
+			else {
+				cancel = challenges.find(function(challenge) {
+					return challenge.getChallenged == msg.author.id && challenge.getChallenger == -1;
+				});
+				if (cancel != undefined) {
+					msg.channel.send("Challenge cancelled.");
+					removeA(challenges, cancel);
+					console.log('Challenges sizes: ' + challenges.length);
+				}
 			}
 		}
 		if (splitMessage[0] == 'abort') { // exit a game
